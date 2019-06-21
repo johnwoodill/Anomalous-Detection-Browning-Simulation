@@ -1,11 +1,17 @@
-
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import scipy.spatial.distance as ssd
+from scipy.spatial import distance
+from sklearn.manifold import MDS
+from sklearn.manifold import Isomap
 
-data = indat[indat['hour'] == 0]
+# Calculate JSD metric
+def f_js(x, y):
+    return distance.jensenshannon(x, y)
 
+# Function calculates NN=5 distances
 def NN_dist(data=None, lat_lis=None, lon_lis=None):
 
     # In km
@@ -84,77 +90,111 @@ def NN_dist(data=None, lat_lis=None, lon_lis=None):
 
     return odat
 
+# Calculate distance matrix
+def jsd_matrix(dat, interval, NN=0):
+    if interval == 'dayhour':
+        dat = dat.groupby(['vessel_A', 'timestamp'],
+                          as_index=False)['distance'].mean()
+        x = []
+
+        gb = dat.groupby(['timestamp'])['distance']
+        lst = [gb.get_group(x) for x in gb.groups]
+        x = []
+        for i in range(len(lst)):
+            for j in range(len(lst)):
+                x += [(i, j, f_js(lst[i], lst[j]))]
+
+        distMatrix = pd.DataFrame(x).pivot(index=0, columns=1, values=2)
+        distMatrix = np.matrix(distMatrix)
+
+    return (distMatrix)
 
 
 
-#xdis = rnorm(N, 0 ,1)
-#ydis = rnorm(N, 0 ,1)
-#xdis = cumsum(xdis)
-#ydis = cumsum(ydis)
-#plot(xdis, ydis, type="l")
-
-#
+# Brownian motion 2-dimension simulation data
+# 100 vessels
+# location centered around 0 
+# movement sd = 0.01
+# N = Number of hours
 
 N = 31*24
 
-# Prior to event
 indat = pd.DataFrame()
 for i in range(0, 100):
-    lat_dis1 = np.random.normal(0, .5, 288)
-    lon_dis1 = np.random.normal(0, .5, 288)
+
+    # Get random sample data
+    # Set random seed
+    lat_dis = np.random.normal(0, .01, N)
+    lon_dis = np.random.normal(0, .01, N)
     
-    lat_dis2 = np.random.normal(0, 4, 119)
-    lon_dis2 = np.random.normal(0, 4, 119)
-
-    lat_dis3 = np.random.normal(0, .5, 337)
-    lon_dis3 = np.random.normal(0, .5, 337)
-
-    lat_dis = np.concatenate([lat_dis1, lat_dis2, lat_dis3])
-    lon_dis = np.concatenate([lon_dis1, lon_dis2, lon_dis3])
-
+    # Cumsum to get movement through space
     lat = np.cumsum(lat_dis)
     lon = np.cumsum(lon_dis)
 
+    # Data frame to merge with indat
     outdat = pd.DataFrame({"hour": range(N),
                             "mmsi": i,
                             "lon": lon,
                             "lat": lat})
+    # merge dat
     indat = pd.concat([indat, outdat])
 
+# Sample data
 indat.head()
 
+# Plot single vessel
 test = indat[indat['mmsi'] == 0]
-
-# Get single vessel path
-sns.set_style("darkgrid")
 plt.plot(test['lon'], test['lat'])
-plt.show()
 
 
+# Get NN distances for each vessel in each hour
 odat = indat.groupby('hour', as_index=False).apply(NN_dist)
 
-odat.head()
+# Print distance range
+print(f"Min Distance: {min(odat['distance'])}  Max Distance: {max(odat['distance'])}")
 
+# Remove first observation vessel_A = vessel_A distance = 0
+odat = odat[odat['distance'] != 0]
+
+# Subset out event day and shock system
+# Day 1 - 13
 dis1 = odat[odat['timestamp'] <= 288]
+
+# Day 14 - 17
 dis2 = odat[(odat['timestamp'] >= 289) & (odat['timestamp'] <= 407)]
+
+# Day 18 - 31
 dis3 = odat[odat['timestamp'] >= 408]
 
-dis1 = dis1[dis1['distance'] != 0]
-dis2 = dis2[dis2['distance'] != 0]
-dis3 = dis3[dis3['distance'] != 0]
+# Shock system using abs value of normal distribution during event
+# Set random seed
+dist = np.abs(np.random.normal(50, 5, len(dis2)))
 
-dis1 = dis1.groupby(['vessel_A', 'timestamp'], as_index=False)['distance'].mean()
-dis2 = dis2.groupby(['vessel_A', 'timestamp'], as_index=False)['distance'].mean()
-dis3 = dis3.groupby(['vessel_A', 'timestamp'], as_index=False)['distance'].mean()
+# Output of shock values
+print(min(dist), max(dist))
 
+# Apply shock
+dis2.loc[:, 'distance'] = dis2.loc[:, 'distance'] + dist
+
+#sdis = dis2.loc[:, 'distance'] + dist
+
+# Merge data back
+dis = pd.concat([dis1, dis2, dis3])
+
+# Get average NN distance for each vessel in each day
+dis = dis.groupby(['vessel_A', 'timestamp'], as_index=False)['distance'].mean()
+
+# Distribution plots
 sns.distplot(np.log(1 + dis1['distance']))
-
 sns.distplot(np.log(1 + dis2['distance']))
-
+#sns.distplot(np.log(sdis))
 sns.distplot(np.log(1 + dis3['distance']))
 
 
+# Calculate JSD matrix
+dmat = jsd_matrix(dis, "dayhour")
 
+# Check matrix
+print(dmat)
 
-
-
+np.save('/home/server/pi/homes/woodilla/Projects/Anomalous-Detection-Browning-Simulation/data/jsd_mat.npy', dmat)
