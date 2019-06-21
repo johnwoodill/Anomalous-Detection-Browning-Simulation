@@ -24,7 +24,7 @@ ndat = pd.DataFrame({"x": nmds_dat[:, 0], "y": nmds_dat[:, 1]})
 ndat['x2'] = ndat['x'].shift(-1)
 ndat['y2'] = ndat['y'].shift(-1)
 
-ndat['distance'] = np.sqrt( (ndat['x'] - ndat['x2'])**2 + (ndat['y'] - ndat['y2'])**2 )
+ndat['distance'] = np.sqrt( (ndat['x2'] - ndat['x'])**2 + (ndat['y2'] - ndat['y'])**2 )
 
 # Calculate speed
 ndat['speed'] = ndat['distance']/1
@@ -44,7 +44,7 @@ ndat = pd.DataFrame({"x": nmds_dat[:, 0], "y": nmds_dat[:, 1]})
 ndat['x2'] = ndat['x'].shift(-1)
 ndat['y2'] = ndat['y'].shift(-1)
 
-ndat['distance'] = np.sqrt( (ndat['x'] - ndat['x2'])**2 + (ndat['y'] - ndat['y2'])**2 )
+ndat['distance'] = np.sqrt( (ndat['x2'] - ndat['x'])**2 + (ndat['y2'] - ndat['y'])**2 )
 
 # Calculate speed
 ndat['speed'] = ndat['distance']/1
@@ -64,7 +64,7 @@ ndat = pd.DataFrame({"x": nmds_dat[:, 0], "y": nmds_dat[:, 1]})
 ndat['x2'] = ndat['x'].shift(-1)
 ndat['y2'] = ndat['y'].shift(-1)
 
-ndat['distance'] = np.sqrt( (ndat['x'] - ndat['x2'])**2 + (ndat['y'] - ndat['y2'])**2 )
+ndat['distance'] = np.sqrt( (ndat['x2'] - ndat['x'])**2 + (ndat['y2'] - ndat['y'])**2 )
 
 # Calculate speed
 ndat['speed'] = ndat['distance']/1
