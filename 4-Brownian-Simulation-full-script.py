@@ -120,10 +120,9 @@ def jsd_matrix(dat, interval, NN=0):
 N = 31*24
 
 indat = pd.DataFrame()
-for i in range(0, 100):
+for i in range(0, 100):   # 100 vessels
 
     # Get random sample data
-    # Set random seed
     lat_dis = np.random.normal(0, .01, N)
     lon_dis = np.random.normal(0, .01, N)
     
@@ -168,15 +167,13 @@ dis3 = odat[odat['timestamp'] >= 408]
 
 # Shock system using abs value of normal distribution during event
 # Set random seed
-dist = np.abs(np.random.normal(50, 5, len(dis2)))
+shock = np.abs(np.random.normal(50, 5, len(dis2)))
 
 # Output of shock values
-print(min(dist), max(dist))
+print(min(shock), max(shock))
 
 # Apply shock
-dis2.loc[:, 'distance'] = dis2.loc[:, 'distance'] + dist
-
-#sdis = dis2.loc[:, 'distance'] + dist
+dis2.loc[:, 'distance'] = dis2.loc[:, 'distance'] + shock
 
 # Merge data back
 dis = pd.concat([dis1, dis2, dis3])
@@ -187,7 +184,6 @@ dis = dis.groupby(['vessel_A', 'timestamp'], as_index=False)['distance'].mean()
 # Distribution plots
 sns.distplot(np.log(1 + dis1['distance']))
 sns.distplot(np.log(1 + dis2['distance']))
-#sns.distplot(np.log(sdis))
 sns.distplot(np.log(1 + dis3['distance']))
 
 
@@ -234,7 +230,6 @@ ndat['distance'] = np.sqrt( (ndat['x'] - ndat['x2'])**2 + (ndat['y'] - ndat['y2'
 # Calculate speed
 ndat['speed'] = ndat['distance']/1
 
-
 # Plot speed
 plt = sns.scatterplot(x=range(len(ndat)) ,y=ndat['speed'], edgecolor="black")
 plt.axvline(289, ls='--', color='white')
@@ -254,13 +249,10 @@ ndat['distance'] = np.sqrt( (ndat['x'] - ndat['x2'])**2 + (ndat['y'] - ndat['y2'
 # Calculate speed
 ndat['speed'] = ndat['distance']/1
 
-
 # Plot speed
 plt = sns.scatterplot(x=range(len(ndat)) ,y=ndat['speed'], edgecolor="black")
 plt.axvline(289, ls='--', color='white')
 plt.axvline(407, ls='--', color='white')
-
-
 
 # Limit outliers
 plt = sns.scatterplot(x=range(len(ndat)) ,y=ndat['speed'], edgecolor="black")
